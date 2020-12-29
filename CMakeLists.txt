@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(template-matching)
+project(pose-estimation)
 find_package(OpenCV REQUIRED)
 
-set(SOURCE_FILES src/main.cpp)
+set(SOURCE_FILES
+        src/main.cpp
+        src/pose_estimation.cpp
+        src/results_writer.cpp
+        src/utils.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
