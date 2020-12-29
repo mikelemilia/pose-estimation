@@ -34,3 +34,5 @@
 # Folders
 build/
 data/
+.idea/
+cmake-build-debug
