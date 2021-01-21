@@ -1,5 +1,5 @@
 #include "../include/results_writer.h"
-#include "../include/pose_estimation.h"
+#include "../include/ObjectEstimator.h"
 
 using namespace cv;
 using namespace std;
@@ -7,22 +7,22 @@ using namespace std;
 int main(int argc, char **argv) {
 
     // TODO create an init function and get
-//    String path = "../data/can";
-    ObjectEstimation obj = ObjectEstimation(init(argc,argv));
+    ObjectEstimator obj = ObjectEstimator("../data/can");
 
-    obj.loadData();
+    obj.loadDataset();
 
-    cout << "a" << endl;
-    vector<Mat> images = obj.getModels();
+    vector<Mat> m = obj.getViews();
+    vector<Mat> n = obj.getMasks();
+    vector<Mat> t = obj.getTests();
 
-    cout << images.size() << endl;
+    obj.estimate();
 
-    for (auto &image : images) {
+    /*for (auto &image : t) {
         namedWindow("KEYPOINTS", WINDOW_NORMAL);
         resizeWindow("KEYPOINTS", 1000, 500);
         imshow("KEYPOINTS", image);
-        waitKey(5);
-    }
+        waitKey(10);
+    }*/
 
     return 0;
 

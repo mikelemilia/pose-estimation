@@ -5,25 +5,34 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 
-#include "utils.h"
+#include "Utility.h"
 
 using namespace cv;
 using namespace std;
 
-class ObjectEstimation {
+class ObjectEstimator {
 
 public:
 
-    ObjectEstimation(const String &path = "../data");
+    ObjectEstimator(const String &path = "../data");
 
-    virtual ~ObjectEstimation();
+    virtual ~ObjectEstimator();
 
-    void loadData();
+    void loadDataset();
 
+    // METRICS
+    Mat computeLBP(Mat image);
 
-    const vector<Mat> &getModels() const;
+    // TEMPLATE MATCHING
+    vector<Mat> estimate();
 
-    void setModels(const vector<Mat> &models);
+    tuple<double, Point> slidingWindow(Mat &img, Mat &temp, Mat &mask);
+
+    // GETTERS & SETTERS
+
+    const vector<Mat> &getViews() const;
+
+    void setViews(const vector<Mat> &views);
 
     const vector<Mat> &getMasks() const;
 
@@ -37,9 +46,10 @@ public:
 
     void setPath(const String &path);
 
+
 private:
 
-    vector<Mat> models;
+    vector<Mat> views;
     vector<Mat> masks;
     vector<Mat> tests;
 

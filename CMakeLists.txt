@@ -5,9 +5,9 @@ find_package(OpenCV REQUIRED)
 
 set(SOURCE_FILES
         src/main.cpp
-        src/pose_estimation.cpp
+        src/ObjectEstimator.cpp
         src/results_writer.cpp
-        src/utils.cpp)
+        src/Utility.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
