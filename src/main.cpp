@@ -7,22 +7,11 @@ using namespace std;
 int main(int argc, char **argv) {
 
     // TODO create an init function and get
-    ObjectEstimator obj = ObjectEstimator("../data/can");
+    ObjectEstimator obj = ObjectEstimator("../data/duck");
 
     obj.loadDataset();
 
-    vector<Mat> m = obj.getViews();
-    vector<Mat> n = obj.getMasks();
-    vector<Mat> t = obj.getTests();
-
-    obj.estimate();
-
-    /*for (auto &image : t) {
-        namedWindow("KEYPOINTS", WINDOW_NORMAL);
-        resizeWindow("KEYPOINTS", 1000, 500);
-        imshow("KEYPOINTS", image);
-        waitKey(10);
-    }*/
+    obj.estimate(TEMPLATE_MATCHING);
 
     return 0;
 

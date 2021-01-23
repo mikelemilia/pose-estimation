@@ -7,21 +7,27 @@
 using namespace cv;
 using namespace std;
 
-class Utility{
+class Utility {
 
 public:
 
 //    String init(int argc, char **argv);
 
+    static vector<pair<Mat, String >> loadViews(String &path);
 
-    static vector<Mat> loadViews(String &path);
-    static vector<Mat> loadMasks(String &path);
-    static vector<Mat> loadTests(String &path);
+    static vector<pair<Mat, String >> loadMasks(String &path);
 
-    static vector<pair<double, int>> generatePair(vector<double> v);
+    static vector<pair<Mat, String >> loadTests(String &path);
+
+    static vector<pair<double, int>> generateIndex(vector<double> v);
+
+    static void show(Mat &image, const String &name, pair<int, int> dimension);
 
     String getRoot(String &path);
-    String getDirectory(String &path);
+
+    static String getDirectory(String &path);
+
+    static String getFilename(String &path);
 
 };
 

@@ -4,7 +4,7 @@
 //
 //    const String keys =
 //            "{help h usage ? |<none>| Print help message }"
-//            "{@path          |      | Dataset path}";
+//            "{@          |      | Dataset path}";
 //
 //    CommandLineParser parser(argc, argv, keys);
 //    parser.about("\nOBJECT POSE ESTIMATION AND TEMPLATE MATCHING\n");
@@ -24,14 +24,14 @@
 //    return path;
 //}
 
-vector<Mat> Utility::loadViews(String &path) {
+vector<pair<Mat, String >> Utility::loadViews(String &path) {
 
-    vector<String> template_names;
-    vector<Mat> templates;
+    vector<String> names;
+    vector<pair<Mat, String >> views;
 
     try {
 
-        glob(path + "/models/model*.png", template_names, false);
+        glob(path + "/models/model*.png", names, false);
 
     } catch (Exception &e) {
 
@@ -41,22 +41,22 @@ vector<Mat> Utility::loadViews(String &path) {
 
     }
 
-    for (auto &name : template_names) {
-        templates.push_back(imread(name));
+    for (auto &v : names) {
+        views.emplace_back(make_pair(imread(v), getFilename(v)));
     }
 
-    return templates;
+    return views;
 
 }
 
-vector<Mat> Utility::loadMasks(String &path) {
+vector<pair<Mat, String >> Utility::loadMasks(String &path) {
 
-    vector<String> mask_names;
-    vector<Mat> masks;
+    vector<String> names;
+    vector<pair<Mat, String >> masks;
 
     try {
 
-        glob(path + "/models/mask*.png", mask_names, false);
+        glob(path + "/models/mask*.png", names, false);
 
     } catch (Exception &e) {
 
@@ -66,22 +66,22 @@ vector<Mat> Utility::loadMasks(String &path) {
 
     }
 
-    for (auto &name : mask_names) {
-        masks.push_back(imread(name));
+    for (auto &m : names) {
+        masks.emplace_back(make_pair(imread(m), getFilename(m)));
     }
 
     return masks;
 
 }
 
-vector<Mat> Utility::loadTests(String &path) {
+vector<pair<Mat, String >> Utility::loadTests(String &path) {
 
-    vector<String> test_names;
-    vector<Mat> tests;
+    vector<String> names;
+    vector<pair<Mat, String >> tests;
 
     try {
 
-        glob(path + "/test_images/test*.jpg", test_names, false);
+        glob(path + "/test_images/test*.jpg", names, false);
 
     } catch (Exception &e) {
 
@@ -91,8 +91,8 @@ vector<Mat> Utility::loadTests(String &path) {
 
     }
 
-    for (auto &name : test_names) {
-        tests.push_back(imread(name));
+    for (auto &t : names) {
+        tests.emplace_back(make_pair(imread(t), getFilename(t)));
     }
 
     return tests;
@@ -101,7 +101,7 @@ vector<Mat> Utility::loadTests(String &path) {
 
 String Utility::getRoot(String &path) {
     size_t found = path.find_last_of("/");
-    return path.substr(found + 1, path.length());
+    return path.substr(0, found);
 }
 
 String Utility::getDirectory(String &path) {
@@ -109,7 +109,12 @@ String Utility::getDirectory(String &path) {
     return path.substr(found + 1, path.length());                 // filename, path found in (0, found) range
 }
 
-vector<pair<double, int>> Utility::generatePair(vector<double> v) {
+String Utility::getFilename(String &path) {
+    size_t found = path.find_last_of("/");
+    return path.substr(found + 1, path.length());                 // filename, path found in (0, found) range
+}
+
+vector<pair<double, int>> Utility::generateIndex(vector<double> v) {
 
     vector<pair<double, int> > pair;
 
@@ -120,4 +125,10 @@ vector<pair<double, int>> Utility::generatePair(vector<double> v) {
     }
 
     return pair;
+}
+
+void Utility::show(Mat &image, const String &name, pair<int, int> dimension) {
+    namedWindow(name, WINDOW_NORMAL);
+    resizeWindow(name, dimension.first, dimension.second);
+    imshow(name, image);
 }
