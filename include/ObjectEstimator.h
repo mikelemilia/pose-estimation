@@ -15,7 +15,7 @@ using namespace std;
 
 enum {
     TEMPLATE_MATCHING = 0,
-    SIDING_WINDOW = 1
+    SLIDING_WINDOW = 1
 };
 
 class ObjectEstimator {
@@ -32,9 +32,11 @@ public:
 
     pair<double, Point> slidingWindow(Mat &img, Mat &view, Mat &mask);
 
-    pair<double, Point> templateMatching(Mat &img, Mat &view, Mat &mask, int method);
+    pair<double, Point> templateMatching(Mat &img, Mat &view, Mat &mask, vector<double> &metric, int method);
 
     void estimate(int method);
+
+    void verify(String &output);
 
     // GETTERS & SETTERS
 
@@ -56,7 +58,14 @@ public:
 
 private:
 
-    vector<pair<Mat, String>> views;
+//    struct Image {
+//        Image(const String &name, const Mat image) : name(name), image(image) {};
+//
+//        String name;
+//        Mat image;
+//    };
+
+    vector<pair<Mat, String> > views;
     vector<pair<Mat, String> > masks;
     vector<pair<Mat, String> > tests;
 

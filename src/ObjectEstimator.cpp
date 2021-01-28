@@ -12,6 +12,10 @@ void ObjectEstimator::loadDataset() {
 
 }
 
+int step(int x, int n) {
+    return floor(x / n);
+}
+
 // METRICS
 Mat computeEdge(Mat &image) {
 
@@ -24,8 +28,6 @@ Mat computeEdge(Mat &image) {
 
     // Run Canny to detect edges
     Canny(tmp, edge, 15, 45);
-
-//    imshow("Computed Edges", edge);
 
     return edge;
 
@@ -102,47 +104,72 @@ Mat computeLBP(Mat &image) {
 
 }
 
-Scalar computeHSV(Mat &image) {
+Mat computeHist(Mat &image, bool half = false) {
 
-    Mat tmp;
-    Scalar m;
+    Mat hsv, hist;
+    cvtColor(image, hsv, CV_BGR2HSV);
 
-    cvtColor(image, tmp, CV_BGR2HSV);
+    if (half) hsv = hsv(Range(hsv.rows / 2, hsv.rows), Range(0, hsv.cols));
 
-    m = mean(tmp);
+    int h_bins = 50, s_bins = 60;
+    int histSize[] = {h_bins, s_bins};
 
-    return m;
+    // hue varies from 0 to 179, saturation from 0 to 255
+    float h_ranges[] = {0, 180};
+    float s_ranges[] = {0, 256};
+
+    const float *ranges[] = {h_ranges, s_ranges};
+    // Use the 0-th and 1-st channels
+    int channels[] = {0, 1};
+
+    calcHist(&hsv, 1, channels, Mat(), hist, 2, histSize, ranges, true, false);
+    normalize(hist, hist, 0, 1, NORM_MINMAX, -1, Mat());
+
+    return hist;
 
 }
 
 double computeEdgeRatio(Mat &image1, Mat &image2) {
 
-    return double(countNonZero(computeEdge(image1))) / double(countNonZero(computeEdge(image2)));
+    Mat edge1 = computeEdge(image1);
+    Mat edge2 = computeEdge(image2);
+
+    Utility::show(edge1, "View Edge", make_pair(300, 300));
+    Utility::show(edge2, "Processed Edge", make_pair(300, 300));
+
+    return double(countNonZero(edge1)) / double(countNonZero(edge2));
 
 }
 
 double computeGradientRatio(Mat &image1, Mat &image2) {
 
-    return double(countNonZero(computeGradient(image1))) / double(countNonZero(computeGradient(image2)));
+    Mat gradient1 = computeGradient(image1);
+    Mat gradient2 = computeGradient(image2);
+
+    Utility::show(gradient1, "View Gradient", make_pair(300, 300));
+    Utility::show(gradient2, "Processed gradient", make_pair(300, 300));
+
+    return double(countNonZero(gradient1)) / double(countNonZero(gradient2));
 
 }
 
-double computeLBPDivergence(Mat &image1, Mat &image2) {
+double computeLBPDifference(Mat &image1, Mat &image2) {
 
-//    Mat a = computeLBP(image1);
-//    Mat b = computeLBP(image2);
-//    Mat c = computeLBP(image1) - computeLBP(image2);
-//    Utility::show(a, "a", make_pair(500, 500));
-//    Utility::show(b, "b", make_pair(500, 500));
-//    Utility::show(c, "c", make_pair(500, 500));
+    Mat lbp1 = computeLBP(image1);
+    Mat lbp2 = computeLBP(image2);
 
-    return countNonZero(computeLBP(image1) - computeLBP(image2));
+    Utility::show(lbp1, "View LBP", make_pair(300, 300));
+    Utility::show(lbp2, "Processed LBP", make_pair(300, 300));
+
+    return countNonZero(lbp1 - lbp2);
 
 }
 
-Scalar computeHSVDivergence(Mat &image1, Mat &image2) {
+double computeHistDifference(Mat &image1, Mat &image2) {
 
-    return computeHSV(image1) - computeHSV(image2);
+    // Method : CV_COMP_CORREL (0), CV_COMP_CHISQR (1), CV_COMP_INTERSECT (2), CV_COMP_BHATTACHARYYA (3)
+
+    return compareHist(computeHist(image1), computeHist(image2), CV_COMP_INTERSECT);
 
 }
 
@@ -150,49 +177,40 @@ bool computeSimilarity(Mat &view, Mat &processed, vector<double> &metrics) {
 
     double edgeRatio = computeEdgeRatio(view, processed);
     double gradientRatio = computeGradientRatio(view, processed);
-    double localBinaryPatternDivergence = computeLBPDivergence(view, processed);
-    Scalar hueSatDivergence = computeHSVDivergence(view, processed);
+    double localBinaryPatternDifference = computeLBPDifference(view, processed);
+    double histDifference = computeHistDifference(view, processed);
 
-//    cout << "----------VALUES----" << endl;
-//    cout << edgeRatio << endl;
-//    cout << gradientRatio << endl;
-//    cout << localBinaryPatternDivergence << endl;
-//    cout << abs(hueSatDivergence[0]) << endl;
-//    cout << abs(hueSatDivergence[1]) << endl;
-//    cout << "--------------" << endl;
+    if (metrics.empty()) {
 
-    bool is_zeros = all_of(metrics.begin(), metrics.end(), [](int i) { return i == 0; });
-    if (!is_zeros) {
-        if (metrics[0] < edgeRatio && metrics[1] < gradientRatio && metrics[2] > localBinaryPatternDivergence &&
-            metrics[3] < abs(hueSatDivergence[0])) {
+        metrics.emplace_back(edgeRatio);
+        metrics.emplace_back(gradientRatio);
+        metrics.emplace_back(localBinaryPatternDifference);
+        metrics.emplace_back(histDifference);
 
-            metrics[0] = edgeRatio;
-            metrics[1] = gradientRatio;
-            metrics[2] = localBinaryPatternDivergence;
-            metrics[3] = abs(hueSatDivergence[0]);
+        return true;
 
-        } else {
-
-            return false;
-        }
-
-    } else {
+    } else /*if (metrics[0] < edgeRatio && metrics[1] < gradientRatio && metrics[2] > localBinaryPatternDifference && metrics[3] < histDifference) */{
 
         metrics[0] = edgeRatio;
         metrics[1] = gradientRatio;
-        metrics[2] = localBinaryPatternDivergence;
-        metrics[3] = abs(hueSatDivergence[0]);
+        metrics[2] = localBinaryPatternDifference;
+        metrics[3] = histDifference;
+
+        return true; // unable to fin a better match
 
     }
 
-    return true;
+    return false;
 
 }
 
-pair<double, Point> ObjectEstimator::templateMatching(Mat &img, Mat &view, Mat &mask, int method) {
+pair<double, Point> ObjectEstimator::templateMatching(Mat &img, Mat &view, Mat &mask, vector<double> &metric, int method) {
 
     Mat igray, vgray, crop;
     Mat res, tmp, tmp_view;
+
+    double bestDistance;
+    Point bestPosition;
 
     double minVal;
     double maxVal;
@@ -208,7 +226,6 @@ pair<double, Point> ObjectEstimator::templateMatching(Mat &img, Mat &view, Mat &
     matchTemplate(igray, vgray, res, method);
 
 
-
     minMaxLoc(res, &minVal, &maxVal, &minLoc, &maxLoc);
 
     if (method == CV_TM_SQDIFF || method == CV_TM_SQDIFF_NORMED) { matchLoc = minLoc; }
@@ -216,12 +233,23 @@ pair<double, Point> ObjectEstimator::templateMatching(Mat &img, Mat &view, Mat &
     Rect ROI(matchLoc, Point(matchLoc.x + view.cols, matchLoc.y + view.rows));
     crop = tmp(ROI);
 
-    rectangle(tmp, matchLoc, Point(matchLoc.x + view.cols, matchLoc.y + view.rows), Scalar(0, 255, 0), 1, 8, 0);
-    imshow("prova", tmp);
-    waitKey(1);
+//    rectangle(tmp, matchLoc, Point(matchLoc.x + view.cols, matchLoc.y + view.rows), Scalar(0, 255, 0), 1, 8, 0);
 
+    bitwise_and(crop, mask, res); // get the bitwise operation between the mask and the cropped region
 
-    return make_pair(norm(crop,view), matchLoc);
+    imshow("ROI", crop);
+    imshow("BITWISE", res);
+    imshow("TEMPLATE", view);
+    if (computeSimilarity(view, res, metric)) {
+        bestDistance = metric[0] + metric[1] + metric[2] + metric[3];
+
+        cout << "Best distance : " << bestDistance << endl;
+
+        bestPosition.x = matchLoc.x;
+        bestPosition.y = matchLoc.y;
+    }
+
+    return make_pair(bestDistance, bestPosition);
 
 }
 
@@ -243,11 +271,14 @@ pair<double, Point> ObjectEstimator::slidingWindow(Mat &img, Mat &view, Mat &mas
 //    cout << "Rows should be scanned from 0 to " << img.rows - view.rows << endl;
 //    cout << "Cols should be scanned from 0 to " << img.cols - view.cols << endl;
 
-
     for (int j = 0; j < (img.rows - view.rows); j += floor(view.rows / 2)) {
 
-        for (int i = 0; i < (img.cols - view.cols); i++) {
+        bool done = false;
+        int count = 0;
 
+        for (int i = 0; i <= (img.cols - view.cols); i += floor(view.cols / 2)) {
+
+            count++;
             img.copyTo(tmp);
 
             // get ROI
@@ -256,9 +287,9 @@ pair<double, Point> ObjectEstimator::slidingWindow(Mat &img, Mat &view, Mat &mas
 
             bitwise_and(crop, mask, res); // get the bitwise operation between the mask and the cropped region
 
-//            imshow("ROI", crop);
-//            imshow("BITWISE", res);
-//            imshow("TEMPLATE", view);
+            imshow("ROI", crop);
+            imshow("BITWISE", res);
+            imshow("TEMPLATE", view);
             if (computeSimilarity(view, res, bestMetric)) {
                 bestDistance = bestMetric[0] + bestMetric[1] - 0.5 * bestMetric[2] + 0.5 * bestMetric[3];
                 bestPosition.x = i;
@@ -267,9 +298,21 @@ pair<double, Point> ObjectEstimator::slidingWindow(Mat &img, Mat &view, Mat &mas
 
             // Show me what you got
             rectangle(tmp, Point(i, j), Point(i + view.cols, j + view.rows), Scalar(0, 255, 0), 1, 8, 0);
-            imshow("prova", tmp);
+            imshow("Test", tmp);
+//            cout << img.cols - (count+1)*floor(view.cols/2) << endl;
+//            if (img.cols - (count + 1) * floor(view.cols / 2) < floor(view.cols / 2) && !done) {
+//                int q = img.cols - (count + 1) * floor(view.cols / 2);
+////                cout << q << endl;
+////                cout << i << endl;
+//                i = i - floor(view.cols / 2) + q;
+//
+//                done = true;
+//            }
+
             waitKey(1);
+
         }
+
     }
 
     return make_pair(bestDistance, bestPosition);
@@ -292,16 +335,22 @@ void ObjectEstimator::estimate(int method) {
 
     for (auto test : tests) {
 
+        cout << test.second << endl;
+
         vector<double> bestDistances;
         vector<Point> bestPositions;
+        vector<double> metric;
 
         start = clock();
 
         for (int k = 0; k < views.size(); ++k) {
 
-            cout << "Processing " << views[k].second << " in " << test.second << "" << endl;
+            if (method == SLIDING_WINDOW)
+                tie(distance, position) = slidingWindow(test.first, views[k].first, masks[k].first);
+            else
+                tie(distance, position) = templateMatching(test.first, views[k].first, masks[k].first, metric, TM_SQDIFF_NORMED);
 
-            tie(distance, position) = method ? slidingWindow(test.first, views[k].first, masks[k].first) : templateMatching(test.first, views[k].first, masks[k].first, TM_SQDIFF_NORMED);
+            waitKey(1);
 
             bestDistances.emplace_back(distance);
             bestPositions.emplace_back(position);
@@ -311,12 +360,12 @@ void ObjectEstimator::estimate(int method) {
         auto results = Utility::generateIndex(bestDistances);
 
         sort(results.begin(), results.end(), [](auto &left, auto &right) {
-            return right.first < left.first;
+            return left.first < right.first;
         });
 
         end = clock();
         cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-        cout << test.second << " processed in " << cpu_time_used << endl;
+        cout << "\n" << test.second << " processed in " << cpu_time_used << endl;
 
         // Add the ten best results for the current test
         for (int h = 0; h < 10; h++) {

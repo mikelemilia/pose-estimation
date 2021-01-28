@@ -7,7 +7,7 @@ using namespace std;
 int main(int argc, char **argv) {
 
     // TODO create an init function and get
-    ObjectEstimator obj = ObjectEstimator("../data/duck");
+    ObjectEstimator obj = ObjectEstimator("../data/can");
 
     obj.loadDataset();
 
