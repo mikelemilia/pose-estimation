@@ -1,4 +1,3 @@
-#include "../include/results_writer.h"
 #include "../include/ObjectEstimator.h"
 
 using namespace cv;
@@ -6,12 +5,19 @@ using namespace std;
 
 int main(int argc, char **argv) {
 
-    // TODO create an init function and get
-    ObjectEstimator obj = ObjectEstimator("../data/can");
+    vector<String> paths = Utility::menu(argc, argv);
 
-    obj.loadDataset();
+    for(auto &p : paths){
 
-    obj.estimate(TEMPLATE_MATCHING);
+        ObjectEstimator obj = ObjectEstimator(p);
+
+        obj.load();
+
+        obj.estimate(TEMPLATE_MATCHING);
+
+        obj.verify();
+
+    }
 
     return 0;
 

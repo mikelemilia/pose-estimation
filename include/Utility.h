@@ -11,15 +11,7 @@ class Utility {
 
 public:
 
-//    String init(int argc, char **argv);
-
-    static vector<pair<Mat, String >> loadViews(String &path);
-
-    static vector<pair<Mat, String >> loadMasks(String &path);
-
-    static vector<pair<Mat, String >> loadTests(String &path);
-
-    static vector<pair<double, int>> generateIndex(vector<double> v);
+    static vector<String> menu(int argc, char **argv);
 
     static void show(Mat &image, const String &name, pair<int, int> dimension);
 

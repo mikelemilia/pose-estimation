@@ -2,6 +2,7 @@
 #define OBJECT_ESTIMATION_H
 
 #include <iostream>
+#include <map>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <time.h>
@@ -13,12 +14,53 @@
 using namespace cv;
 using namespace std;
 
-enum {
+enum Approaches : int {
     TEMPLATE_MATCHING = 0,
-    SLIDING_WINDOW = 1
+    BLOCK_TEMPLATE_MATCHING = 1,
+    SLIDING_WINDOW = 2,
+    BLOCK_SLIDING_WINDOW = 3
 };
 
 class ObjectEstimator {
+
+private:
+
+    //  HELPFUL STRUCTURES
+
+    struct Result {
+        Result(const double distance, const Point position, const int index) : distance(distance), position(position), index(index) {};
+
+        double distance;
+        Point position;
+        int index;
+    };
+
+    struct Image {
+        Image(const String &name, const Mat image) : name(name), image(image) {};
+
+        String name;
+        Mat image;
+    };
+
+    struct Block {
+        Block(const Mat image, const Point origin) : image(image), origin(origin) {};
+
+        Mat image;
+        Point origin;
+    };
+
+
+    //  VARIABLES
+
+    vector<Image> views;
+
+private:
+    vector<Image> masks;
+    vector<Image> tests;
+
+    map< String, vector<Result> > estimates;
+
+    String path;
 
 public:
 
@@ -26,50 +68,34 @@ public:
 
     virtual ~ObjectEstimator();
 
-    void loadDataset();
-
-    // TEMPLATE MATCHING
-
-    pair<double, Point> slidingWindow(Mat &img, Mat &view, Mat &mask);
-
-    pair<double, Point> templateMatching(Mat &img, Mat &view, Mat &mask, vector<double> &metric, int method);
+    void load();
 
     void estimate(int method);
 
-    void verify(String &output);
+    // TEMPLATE MATCHING
 
-    // GETTERS & SETTERS
+    Result templateMatching(Mat &t, Mat &v, Mat &m, int method, int k);
 
-    const vector<pair<Mat, String>> &getViews() const;
+    // SLIDING WINDOW
 
-    void setViews(const vector<pair<Mat, String>> &v);
+    Result slidingWindow(Mat &t, Mat &v, Mat &m, int k);
 
-    const vector<pair<Mat, String>> &getMasks() const;
 
-    void setMasks(const vector<pair<Mat, String>> &m);
+    // BLOCK OPTIMIZATION
+    Result blockSlidingWindow(Mat &t, Mat &v, Mat &m, Block &block, int k);
 
-    const vector<pair<Mat, String>> &getTests() const;
+    Result blockTemplateMatching(Mat &t, Mat &v, Mat &m, Block &block, int method, int k);
 
-    void setTests(const vector<pair<Mat, String>> &t);
+    vector<Block> subdivide(const Mat &img, int row, int col);
 
-    const String &getPath() const;
+    int findMostProbableBlock(vector<Block> &blocks);
 
-    void setPath(const String &p);
+    void verify();
 
-private:
+    // GETTER
 
-//    struct Image {
-//        Image(const String &name, const Mat image) : name(name), image(image) {};
-//
-//        String name;
-//        Mat image;
-//    };
+    const vector<Image> &getMaximumViewSize() const;
 
-    vector<pair<Mat, String> > views;
-    vector<pair<Mat, String> > masks;
-    vector<pair<Mat, String> > tests;
-
-    String path;
 
 };
 
